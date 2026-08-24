@@ -1,0 +1,253 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                                                                            ║
+║                     QUICK BROWSER TEST CHECKLIST                           ║
+║                                                                            ║
+║  After fixes applied, test these scenarios in your browser:                ║
+║                                                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+SCENARIO 1: Test Validation Errors Show Inline
+═══════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Leave "Employee Number" field EMPTY
+  2. Leave "Last Name" field EMPTY  
+  3. Scroll down and click "Add Teacher" button
+  4. Wait for page reload
+
+Expected Result:
+  ✓ Form stays on ADD TEACHER page (NO redirect)
+  ✓ Red error text appears under "Employee Number": "This field is required."
+  ✓ Red error text appears under "Last Name": "This field is required."
+  ✓ Form is refilled with data already entered
+  ✓ User can correct fields and resubmit
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 2: Test Required Field Passes Validation
+═══════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Fill "Employee Number": EMP-TEST-001
+  2. Fill "Last Name": Test
+  3. Fill "First Name": Teacher
+  4. Fill "Gender": Male (select from dropdown)
+  5. Fill "Position": Teacher (select from dropdown)
+  6. Scroll down and click "Add Teacher"
+  7. Wait for page redirect
+
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Page redirects to view_teacher.php
+  ✓ Green SUCCESS alert appears: "Teacher added successfully!"
+  ✓ New teacher appears in the teachers list
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 3: Test Grade Level Selection Saves
+═════════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Fill all required fields (same as Scenario 2)
+  2. Scroll to "Grade Level/s Taught" section
+  3. CHECK boxes: Grade 7, Grade 8, Grade 9
+  4. Fill remaining fields as desired
+  5. Click "Add Teacher"
+  6. Wait for redirect and alert
+
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Green SUCCESS alert appears
+  ✓ New teacher is created
+  4. Go to teachers list → find new teacher → click View
+  5. Verify Grade Levels section shows: "Grade 7, Grade 8, Grade 9"
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 4: Test Data Privacy Checkbox - CHECKED
+════════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Fill all required fields
+  2. Scroll to bottom near "Add Teacher" button
+  3. CHECK the "Data Privacy Consent" checkbox
+  4. Click "Add Teacher"
+  5. Go to teachers list → find new teacher → Edit
+  
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Teacher is created with data_privacy_consent = 'Yes'
+  ✓ When editing teacher, "Data Privacy Consent" checkbox is CHECKED
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 5: Test Data Privacy Checkbox - UNCHECKED
+═════════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Fill all required fields
+  2. Scroll to bottom near "Add Teacher" button
+  3. DO NOT CHECK the "Data Privacy Consent" checkbox
+  4. Click "Add Teacher"
+  5. Go to teachers list → find new teacher → Edit
+
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Teacher is created with data_privacy_consent = 'No'
+  ✓ When editing teacher, "Data Privacy Consent" checkbox is UNCHECKED
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 6: Test Edit Teacher Form - Validation
+══════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/teachers.php (any teacher)
+
+Steps:
+  1. Click "Edit" button on any teacher
+  2. Clear the "Employee Number" field (make it empty)
+  3. Clear the "Last Name" field (make it empty)
+  4. Click "Update Teacher" button
+
+Expected Result:
+  ✓ Form stays on EDIT page (NO redirect)
+  ✓ Red error text appears: "Employee Number: This field is required."
+  ✓ Red error text appears: "Last Name: This field is required."
+  ✓ Other form data is preserved
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 7: Test Edit Teacher Form - Save Changes
+═════════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/teachers.php (any teacher)
+
+Steps:
+  1. Click "Edit" button on any teacher
+  2. Change: "Middle Name" to "Testing123"
+  3. Change: "Contact Number" to "0912-345-6789"
+  4. Scroll down and click "Update Teacher"
+
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Page redirects to view_teacher.php
+  ✓ Green SUCCESS alert appears: "Teacher updated successfully!"
+  ✓ View teacher page shows updated Middle Name and Contact Number
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 8: Test Edit Teacher - Grade Levels
+═══════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/teachers.php (teacher with grade levels)
+
+Steps:
+  1. Click "Edit" on a teacher who has grade levels
+  2. Scroll to "Grade Level/s Taught" section
+  3. UNCHECK some grade levels
+  4. CHECK new grade levels
+  5. Click "Update Teacher"
+
+Expected Result:
+  ✓ Form submits successfully
+  ✓ Green SUCCESS alert appears
+  ✓ View teacher page shows updated grade levels
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 9: Test Email Validation
+═════════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Fill all required fields
+  2. Fill "Email Address": invalid-email (WITHOUT @ symbol)
+  3. Click "Add Teacher"
+
+Expected Result:
+  ✓ Form stays on ADD page (NO redirect)
+  ✓ Red error text appears: "Invalid email format."
+  ✓ Form data is preserved
+
+Test Pass: YES ___  NO ___
+
+
+SCENARIO 10: Test Duplicate Employee Number
+═══════════════════════════════════════════════════════════════════════════
+
+URL: http://localhost/tpms/add_teacher.php
+
+Steps:
+  1. Find an existing teacher's employee number (e.g., "EMP-001")
+  2. Fill "Employee Number": EMP-001 (duplicate)
+  3. Fill other required fields
+  4. Click "Add Teacher"
+
+Expected Result:
+  ✓ Form stays on ADD page (NO redirect)
+  ✓ Red error text appears: "Employee number already exists."
+  ✓ Form data is preserved so user can try different number
+
+Test Pass: YES ___  NO ___
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+SUMMARY OF EXPECTED BEHAVIORS AFTER FIXES:
+
+✓ Validation errors display inline on the form (red text)
+✓ Form does NOT redirect when there are validation errors
+✓ User can see what's wrong and fix it
+✓ Form resubmits successfully after fixing errors
+✓ Grade levels selected in checkboxes save correctly
+✓ Data privacy checkbox state saves correctly (Yes/No)
+✓ SweetAlert shows green success alert after successful submit
+✓ SweetAlert shows red error alert if database error occurs
+✓ All form data is preserved when redisplaying for error correction
+
+═══════════════════════════════════════════════════════════════════════════════
+
+WHAT THESE FIXES SOLVE:
+
+PROBLEM: "i cant submit and no validation showing"
+  ✓ FIXED: Form now submits when data is valid
+  ✓ FIXED: Validation errors now display inline on form
+
+PROBLEM: "it does not updating and adding"
+  ✓ FIXED: POST data properly collected (including grade_level and checkbox)
+  ✓ FIXED: Grade levels and data privacy now save correctly
+
+PROBLEM: Need "sweet alert if the form was success or failed"
+  ✓ FIXED: SweetAlert shows on success
+  ✓ FIXED: SweetAlert shows on database errors
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Quick verification: If all 10 scenarios PASS, then all bugs are FIXED!
+
+Current Status: ✓ Syntax validated
+               ✓ Code fixes applied
+               ✓ Tests passed (programmatic)
+               ⏳ Awaiting manual browser testing
+
+═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,54 @@
+# TPMS .htaccess - Security + URL Rules
+# Note for shared hosting: avoid Options directives here because some cPanel
+# setups reject them and return HTTP 500.
+
+# ── Security Headers ──────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+</IfModule>
+
+# ── Deny direct access to sensitive directories/files ─────────
+<FilesMatch "\.(sql|log|env|md|json|lock)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /tpms/
+
+    # Block direct access to sensitive files
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^config\.php - [F,L]
+
+    # Don't rewrite if it's a real file or directory
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Don't rewrite if already has .php extension
+    RewriteCond %{REQUEST_URI} !\.php$ 
+    
+    # Rewrite extension-less URLs to .php files (root level and nested paths)
+    RewriteRule ^([a-zA-Z0-9_/-]+)/?$ $1.php [L,QSA]
+
+</IfModule>
+
+# Default document
+DirectoryIndex index.php login.php
+
+# ── PHP settings ──────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_value upload_max_filesize  25M
+    php_value post_max_size        26M
+    php_value max_execution_time   120
+    php_value memory_limit         256M
+</IfModule>
