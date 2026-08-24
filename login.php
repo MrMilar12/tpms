@@ -1072,6 +1072,13 @@ body.login-v2 {
     .login-shell .shell-right-glow::after {
         animation: none !important;
     }
+    /* Animated form groups start transparent. When motion is disabled they
+       must be made visible explicitly because the fadeUp animation never
+       runs to apply its final frame. */
+    .login-form .form-group {
+        opacity: 1;
+        transform: none;
+    }
     .boot-logo-core,
     .boot-logo-image,
     .boot-logo-ring,

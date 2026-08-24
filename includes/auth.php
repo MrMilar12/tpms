@@ -212,6 +212,12 @@ function ensureUserOnboardingColumns(PDO $db): void {
         $cols[] = $c['Field'];
     }
 
+    // District-scoped roles read this during finalizeLogin(). Older TPMS
+    // databases can already contain PSDS/SDC roles without this newer column,
+    // which otherwise turns a successful login into an HTTP 500 response.
+    if (!in_array('district_id', $cols, true)) {
+        $db->exec('ALTER TABLE users ADD COLUMN district_id INT UNSIGNED DEFAULT NULL AFTER role');
+    }
     if (!in_array('preferred_theme', $cols, true)) {
         $db->exec('ALTER TABLE users ADD COLUMN preferred_theme VARCHAR(40) DEFAULT NULL AFTER profile_photo');
     }
