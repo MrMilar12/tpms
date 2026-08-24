@@ -19,7 +19,7 @@ define('DB_CHARSET', 'utf8mb4');
 // Application
 define('APP_NAME', 'TPMS');
 define('APP_FULL_NAME', 'Teacher Profiling Management System');
-define('APP_VERSION', '1.10.0');
+define('APP_VERSION', '1.11.1');
 define('BASE_PATH', __DIR__);
 
 // Build APP_URL dynamically so redirects work on localhost, LAN IPs, cPanel,

@@ -640,6 +640,7 @@ function ensureTeacherPlanningSchema(PDO $db): void {
         }
 
         $schoolAlters = [
+            'school_head_teacher_id' => 'ALTER TABLE schools ADD COLUMN school_head_teacher_id INT UNSIGNED DEFAULT NULL AFTER district_id',
             'school_year' => 'ALTER TABLE schools ADD COLUMN school_year VARCHAR(20) DEFAULT NULL AFTER district_id',
             'total_sections' => 'ALTER TABLE schools ADD COLUMN total_sections INT UNSIGNED DEFAULT 0 AFTER learner_count',
             'total_required_classes' => 'ALTER TABLE schools ADD COLUMN total_required_classes INT UNSIGNED DEFAULT 0 AFTER total_sections',
@@ -1066,7 +1067,26 @@ function ensureDatabasePerformanceIndexes(PDO $db): array {
  * Returns array of district IDs, or single district_id if set on user record
  */
 function getUserDistricts(PDO $db, int $userId): array {
-    $districts = [];
+    static $tableReady = false;
+    if (!$tableReady) {
+        $tableCheck = $db->query("SHOW TABLES LIKE 'user_districts'");
+        if (!$tableCheck->fetchColumn()) {
+            $db->exec("CREATE TABLE user_districts (
+            id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id INT UNSIGNED NOT NULL,
+            district_id INT UNSIGNED NOT NULL,
+            assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_user_district (user_id, district_id),
+            INDEX idx_user_id (user_id),
+            INDEX idx_district_id (district_id),
+            CONSTRAINT fk_ud_user FOREIGN KEY (user_id)
+                REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+            CONSTRAINT fk_ud_district FOREIGN KEY (district_id)
+                REFERENCES districts(id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
+        $tableReady = true;
+    }
     
     // Get user role first
     $userStmt = $db->prepare('SELECT role, district_id FROM users WHERE id = ? LIMIT 1');
@@ -1075,11 +1095,17 @@ function getUserDistricts(PDO $db, int $userId): array {
     if (!$user) return [];
     
     $role = strtolower($user['role'] ?? '');
-    $districts = [];
-    
-    // For PSDS/SDC/Unit Head: get from users.district_id
-    if (in_array($role, ['psds', 'sdc', 'unit_head'], true) && (int)$user['district_id'] > 0) {
-        $districts = [(int)$user['district_id']];
+    if (!in_array($role, ['psds', 'sdc', 'unit_head'], true)) {
+        return [];
+    }
+
+    // Include junction-table assignments for multi-district accounts, while
+    // retaining users.district_id as the backwards-compatible primary value.
+    $assignmentStmt = $db->prepare('SELECT district_id FROM user_districts WHERE user_id = ? ORDER BY district_id');
+    $assignmentStmt->execute([$userId]);
+    $districts = $assignmentStmt->fetchAll(PDO::FETCH_COLUMN);
+    if ((int)$user['district_id'] > 0) {
+        $districts[] = (int)$user['district_id'];
     }
     
     return array_map('intval', array_unique(array_filter($districts)));

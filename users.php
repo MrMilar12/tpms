@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($username === '')  $errors['username']  = 'Required.';
         if ($fullName === '')  $errors['full_name']  = 'Required.';
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'Enter a valid email address.';
         if (!in_array($role, ['admin','hr','school_head','viewer','psds','sdc','unit_head'], true)) $errors['role'] = 'Invalid role.';
 
         if (!$errors) {
@@ -149,6 +150,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'INSERT INTO users (username, password_hash, full_name, email, role, district_id, is_active, twofa_enabled, twofa_secret) VALUES (?,?,?,?,?,?,?,?,?)'
                         )->execute([$username, password_hash($password, PASSWORD_BCRYPT), $fullName, $email ?: null, $role, $districtId, $active, $twofaEnabled, $twofaSecret]);
                         $newUserId = (int)$db->lastInsertId();
+
+                        if ($districtId && in_array($role, ['psds', 'sdc', 'unit_head'], true)) {
+                            // Initialize the multi-district mapping as well as
+                            // the backwards-compatible primary district value.
+                            getUserDistricts($db, $newUserId);
+                            $db->prepare('INSERT INTO user_districts (user_id, district_id) VALUES (?, ?)
+                                          ON DUPLICATE KEY UPDATE assigned_at = assigned_at')
+                                ->execute([$newUserId, $districtId]);
+                        }
                         
                         logActivity('CREATE', 'users', $newUserId, "Created user: $username");
                         flash('success', 'User created.');
@@ -183,6 +193,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash('success', 'User deleted.');
         }
         redirect(APP_URL . '/users.php');
+    }
+}
+
+$isEditingUser = is_array($editUser) && (int)($editUser['id'] ?? 0) > 0;
+$showUserModal = $isEditingUser;
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save' && $errors) {
+    $showUserModal = true;
+    if (!$isEditingUser) {
+        $editUser = [
+            'id' => 0,
+            'username' => trim((string)($_POST['username'] ?? '')),
+            'full_name' => trim((string)($_POST['full_name'] ?? '')),
+            'email' => trim((string)($_POST['email'] ?? '')),
+            'role' => (string)($_POST['role'] ?? ''),
+            'district_id' => (int)($_POST['district_id'] ?? 0),
+            'is_active' => isset($_POST['is_active']) ? 1 : 0,
+            'twofa_enabled' => isset($_POST['twofa_enabled']) ? 1 : 0,
+        ];
     }
 }
 
@@ -558,19 +586,19 @@ function getRoleBadgeWithColor($role) {
 </div>
 
 <!-- ── Add/Edit User Modal ──────────────────────────────────── -->
-<div class="modal-overlay" id="userModal" style="display:<?= $editUser ? 'flex' : 'none' ?>">
+<div class="modal-overlay" id="userModal" style="display:<?= $showUserModal ? 'flex' : 'none' ?>">
     <div class="modal glass-card" style="max-width:600px;max-height:90vh;overflow-y:auto">
         <div class="modal-header">
             <h3 class="modal-title">
-                <i class="fas <?= $editUser ? 'fa-user-edit' : 'fa-user-plus' ?>"></i>
-                <?= $editUser ? 'Edit User' : 'Add New User' ?>
+                <i class="fas <?= $isEditingUser ? 'fa-user-edit' : 'fa-user-plus' ?>"></i>
+                <?= $isEditingUser ? 'Edit User' : 'Add New User' ?>
             </h3>
             <button class="modal-close" onclick="closeUserModal()">×</button>
         </div>
         <form method="POST" action="" class="user-modal-form">
             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
             <input type="hidden" name="action" value="save">
-            <input type="hidden" name="uid" value="<?= $editUser ? (int)$editUser['id'] : 0 ?>">
+            <input type="hidden" name="uid" value="<?= $isEditingUser ? (int)$editUser['id'] : 0 ?>">
 
             <!-- Basic Info Section -->
             <div class="form-section">
@@ -598,6 +626,7 @@ function getRoleBadgeWithColor($role) {
                         <input type="email" name="email" class="form-input"
                                value="<?= clean($editUser['email'] ?? '') ?>"
                                placeholder="john@example.com">
+                        <?php if (!empty($errors['email'])): ?><span class="form-error"><?= clean($errors['email']) ?></span><?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -621,7 +650,7 @@ function getRoleBadgeWithColor($role) {
                 </div>
 
                 <!-- District Selection for PSDS/SDC/Unit Head -->
-                <div id="districtFieldContainer" style="display:none !important;">
+                <div id="districtFieldContainer" style="display:none;">
                     <div class="form-group">
                         <label class="form-label">Assigned District</label>
                         <select name="district_id" id="districtSelect" class="form-input">
@@ -643,11 +672,11 @@ function getRoleBadgeWithColor($role) {
                 <div class="form-section-title">Authentication</div>
                 
                 <div class="form-group">
-                    <label class="form-label <?= !$editUser ? 'required' : '' ?>">Password <?= $editUser ? '(leave blank to keep current)' : '' ?></label>
+                    <label class="form-label <?= !$isEditingUser ? 'required' : '' ?>">Password <?= $isEditingUser ? '(leave blank to keep current)' : '' ?></label>
                     <div class="input-with-toggle">
                         <input type="password" name="password" id="newPassword" class="form-input"
-                               <?= !$editUser ? 'required' : '' ?> 
-                               placeholder="<?= $editUser ? 'Leave blank to keep current' : 'Set password' ?>">
+                               <?= !$isEditingUser ? 'required' : '' ?>
+                               placeholder="<?= $isEditingUser ? 'Leave blank to keep current' : 'Set password' ?>">
                         <button type="button" class="toggle-password" data-target="newPassword">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -660,7 +689,7 @@ function getRoleBadgeWithColor($role) {
                     <span><strong>Require 2FA</strong> - User must use authenticator app</span>
                 </label>
 
-                <?php if ($editUser): ?>
+                <?php if ($isEditingUser): ?>
                 <label class="checkbox-label">
                     <input type="checkbox" name="regenerate_2fa" value="1">
                     <span>Regenerate authenticator secret on save</span>
@@ -677,7 +706,7 @@ function getRoleBadgeWithColor($role) {
             </div>
 
             <!-- Confirmation -->
-            <?php if ($editUser): ?>
+            <?php if ($isEditingUser): ?>
             <div class="form-section">
                 <div class="form-group">
                     <label class="form-label required">Confirm Your Password</label>
@@ -692,8 +721,8 @@ function getRoleBadgeWithColor($role) {
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" onclick="closeUserModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas <?= $editUser ? 'fa-save' : 'fa-user-plus' ?>"></i>
-                    <?= $editUser ? 'Update User' : 'Create User' ?>
+                    <i class="fas <?= $isEditingUser ? 'fa-save' : 'fa-user-plus' ?>"></i>
+                    <?= $isEditingUser ? 'Update User' : 'Create User' ?>
                 </button>
             </div>
         </form>

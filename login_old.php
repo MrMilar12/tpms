@@ -1068,7 +1068,7 @@ body.login-v2 {
         <aside class="login-hero-pane">
             <span class="hero-right-glow" aria-hidden="true"></span>
             <div class="hero-top">
-                <span class="brand-chip"><i class="fas fa-sparkles"></i> Welcome</span>
+                <span class="brand-chip"><i class="fas fa-wand-magic-sparkles"></i> Welcome</span>
              
                 <h2 class="hero-title">TalaGuro</h2>
                 <p class="hero-subtitle">Smart Teacher Data for Smarter Planning</p>

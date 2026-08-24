@@ -14,24 +14,14 @@ if (!isLoggedIn()) {
 $user = currentUser();
 $db = getDB();
 
-// Get user's assigned district from users table
 $userRole = strtolower($user['role'] ?? '');
-$userDistrict = null;
-
-// Fetch the user's assigned district from users table
-$userStmt = $db->prepare('SELECT district_id FROM users WHERE id = ? LIMIT 1');
-$userStmt->execute([(int)$user['id']]);
-$userDistrict = (int)($userStmt->fetchColumn() ?? 0);
-
-// Get the district details
 $districts = [];
-if ($userDistrict > 0) {
-    $districtStmt = $db->prepare('SELECT id, district_name FROM districts WHERE id = ? LIMIT 1');
-    $districtStmt->execute([$userDistrict]);
-    $districtData = $districtStmt->fetch(PDO::FETCH_ASSOC);
-    if ($districtData) {
-        $districts = [$districtData];
-    }
+$assignedDistrictIds = getUserDistricts($db, (int)$user['id']);
+if ($assignedDistrictIds) {
+    $placeholders = implode(',', array_fill(0, count($assignedDistrictIds), '?'));
+    $districtStmt = $db->prepare("SELECT id, district_name FROM districts WHERE id IN ($placeholders) ORDER BY district_name");
+    $districtStmt->execute($assignedDistrictIds);
+    $districts = $districtStmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 if (empty($districts)) {
@@ -49,10 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Verify the selected district is in the available list
     if (in_array($selectedDistrictId, $availableDistrictIds, true)) {
-        // Save district to users table
-        $db->prepare('UPDATE users SET district_id = ? WHERE id = ?')
-            ->execute([$selectedDistrictId, (int)$user['id']]);
-        
         // Set in session
         setSessionDistrict($selectedDistrictId);
         unset($_SESSION['available_districts']);

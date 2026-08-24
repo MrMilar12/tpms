@@ -76,20 +76,6 @@ if ($schoolHeadTeacherId > 0) {
     }
 }
 
-// Resolve or create district → get district_id
-$districtId = null;
-if ($district !== '') {
-    $dStmt = $db->prepare('SELECT id FROM districts WHERE district_name = ?');
-    $dStmt->execute([$district]);
-    $dRow = $dStmt->fetch();
-    if ($dRow) {
-        $districtId = (int)$dRow['id'];
-    } else {
-        $db->prepare('INSERT INTO districts (district_name) VALUES (?)')->execute([$district]);
-        $districtId = (int)$db->lastInsertId();
-    }
-}
-
 if ($id > 0) {
     $confirmPassword = (string)($_POST['confirm_password'] ?? '');
     if ($confirmPassword === '') {
@@ -105,7 +91,24 @@ if ($id > 0) {
         flash('error', 'Invalid password. School update was not performed.');
         redirect(APP_URL . '/schools.php');
     }
+}
 
+// Resolve or create the district only after edit authorization succeeds.
+// This prevents an invalid school-edit attempt from creating district data.
+$districtId = null;
+if ($district !== '') {
+    $dStmt = $db->prepare('SELECT id FROM districts WHERE district_name = ?');
+    $dStmt->execute([$district]);
+    $dRow = $dStmt->fetch();
+    if ($dRow) {
+        $districtId = (int)$dRow['id'];
+    } else {
+        $db->prepare('INSERT INTO districts (district_name) VALUES (?)')->execute([$district]);
+        $districtId = (int)$db->lastInsertId();
+    }
+}
+
+if ($id > 0) {
     $updateFields = [
         'school_name' => $name,
         'school_id_code' => $code ?: null,
@@ -113,9 +116,9 @@ if ($id > 0) {
         'school_type' => $schoolType ?: null,
         'als_subtype' => $alsSubtype,
         'district_id' => $districtId,
-        'school_head_teacher_id' => $schoolHeadTeacherId ?: null,
         'learner_count' => $learnerCount,
     ];
+    if (in_array('school_head_teacher_id', $schoolCols, true)) $updateFields['school_head_teacher_id'] = $schoolHeadTeacherId ?: null;
     if ($hasLearnersPerTeacher) $updateFields['learners_per_teacher'] = $learnersPerTeacher;
     if (in_array('school_year', $schoolCols, true)) $updateFields['school_year'] = $schoolYear !== '' ? $schoolYear : null;
     if (in_array('total_sections', $schoolCols, true)) $updateFields['total_sections'] = $totalSections;
@@ -137,9 +140,9 @@ if ($id > 0) {
         'school_type' => $schoolType ?: null,
         'als_subtype' => $alsSubtype,
         'district_id' => $districtId,
-        'school_head_teacher_id' => $schoolHeadTeacherId ?: null,
         'learner_count' => $learnerCount,
     ];
+    if (in_array('school_head_teacher_id', $schoolCols, true)) $insertFields['school_head_teacher_id'] = $schoolHeadTeacherId ?: null;
     if ($hasLearnersPerTeacher) $insertFields['learners_per_teacher'] = $learnersPerTeacher;
     if (in_array('school_year', $schoolCols, true)) $insertFields['school_year'] = $schoolYear !== '' ? $schoolYear : null;
     if (in_array('total_sections', $schoolCols, true)) $insertFields['total_sections'] = $totalSections;

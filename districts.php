@@ -313,7 +313,7 @@ if ($selectedDistrict !== '') {
 <?php endif; ?>
 
 <?php if (canEdit()): ?>
-<div class="modal-overlay" id="districtModal" style="display:none">
+<div class="modal-overlay" id="districtModal" style="display:<?= $errors ? 'flex' : 'none' ?>">
     <div class="modal glass-card" style="max-width:520px">
         <div class="modal-header">
             <h3 class="modal-title" id="districtModalTitle">Add District</h3>
@@ -322,10 +322,11 @@ if ($selectedDistrict !== '') {
         <form method="POST" action="">
             <input type="hidden" name="csrf_token" value="<?= csrfToken() ?>">
             <input type="hidden" name="action" value="save">
-            <input type="hidden" name="id" id="districtId" value="">
+            <input type="hidden" name="id" id="districtId" value="<?= (int)($_POST['id'] ?? 0) ?>">
             <div class="form-group">
                 <label class="form-label required">District Name</label>
-                <input type="text" name="district_name" id="districtName" class="form-input" required placeholder="e.g. District I">
+                <input type="text" name="district_name" id="districtName" class="form-input" required placeholder="e.g. District I" value="<?= clean((string)($_POST['district_name'] ?? '')) ?>">
+                <?php if (!empty($errors['district_name'])): ?><span class="form-error"><?= clean($errors['district_name']) ?></span><?php endif; ?>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" onclick="closeDistrictModal()">Cancel</button>

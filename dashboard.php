@@ -1535,7 +1535,7 @@ foreach ($compositionHoverRows as $key => $rows) {
             
             <div class="welcome-feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-file-chart-line"></i>
+                    <i class="fas fa-chart-line"></i>
                 </div>
                 <div class="feature-content">
                     <h3>Reports</h3>

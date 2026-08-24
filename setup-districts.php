@@ -47,9 +47,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('error', 'You must select a district.');
         redirect(APP_URL . '/setup-districts');
     }
+
+    $validDistrictIds = array_map('intval', array_column($allDistricts, 'id'));
+    if (!in_array($districtId, $validDistrictIds, true)) {
+        flash('error', 'The selected district is not available.');
+        redirect(APP_URL . '/setup-districts');
+    }
     
     // Update user's district assignment
     $db->prepare('UPDATE users SET district_id = ?, updated_at = NOW() WHERE id = ?')->execute([$districtId, (int)$user['id']]);
+    $db->prepare('INSERT INTO user_districts (user_id, district_id) VALUES (?, ?)
+                  ON DUPLICATE KEY UPDATE assigned_at = assigned_at')
+        ->execute([(int)$user['id'], $districtId]);
     
     logActivity('DISTRICT_SETUP', 'users', (int)$user['id'], "Assigned to district ID: " . $districtId);
     unset($_SESSION['available_districts_for_setup']);

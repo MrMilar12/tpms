@@ -96,7 +96,7 @@ $hasLearnersPerTeacher = in_array('learners_per_teacher', $schoolCols, true);
 
 if (!in_array('school_head_teacher_id', $schoolCols, true)) {
     try {
-        $db->exec('ALTER TABLE schools ADD COLUMN school_head_teacher_id INT NULL AFTER district_id');
+        $db->exec('ALTER TABLE schools ADD COLUMN school_head_teacher_id INT UNSIGNED DEFAULT NULL AFTER district_id');
         $schoolCols[] = 'school_head_teacher_id';
     } catch (Throwable $e) {
         error_log('TPMS school head migration skipped: ' . $e->getMessage());
@@ -1027,8 +1027,8 @@ if ($districtFilter !== '') {
                 Optional but supported: <strong>District</strong>, <strong>Municipality</strong>, <strong>School Type</strong>, and <strong>ALS Subtype</strong>.
             </div>
             <div class="form-group">
-                <label class="form-label required">Upload File (.xlsx, .xls, .csv)</label>
-                <input type="file" name="upload_file" class="form-input" accept=".xlsx,.xls,.csv" required>
+                <label class="form-label required">Upload File (.xlsx, .csv)</label>
+                <input type="file" name="upload_file" class="form-input" accept=".xlsx,.csv" required>
             </div>
             <div class="form-group" style="display:flex;gap:12px;flex-wrap:wrap">
                 <label><input type="checkbox" name="skip_duplicates" value="1" checked> Skip duplicates</label>

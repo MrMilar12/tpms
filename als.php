@@ -260,8 +260,8 @@ $centers = $stmt->fetchAll();
                 For ALS records, set <strong>School Type</strong> to <strong>ALS</strong> and use <strong>ALS Subtype</strong> values: <strong>CBLC</strong>, <strong>SBLC</strong>, or <strong>ALS-SHS</strong>.
             </div>
             <div class="form-group">
-                <label class="form-label required">Upload File (.xlsx, .xls, .csv)</label>
-                <input type="file" name="upload_file" class="form-input" accept=".xlsx,.xls,.csv" required>
+                <label class="form-label required">Upload File (.xlsx, .csv)</label>
+                <input type="file" name="upload_file" class="form-input" accept=".xlsx,.csv" required>
                 <small style="color:#999">Include "School Type" and "ALS Subtype" columns for proper categorization</small>
             </div>
             <div class="form-group" style="display:flex;gap:12px;flex-wrap:wrap">

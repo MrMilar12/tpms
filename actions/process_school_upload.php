@@ -28,7 +28,7 @@ if ($file['size'] > $maxBytes) {
 }
 
 $ext     = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-$allowed = ['xlsx', 'xls', 'csv'];
+$allowed = ['xlsx', 'csv'];
 if (!in_array($ext, $allowed, true)) {
     flash('error', 'Invalid file type. Use .xlsx or .csv.');
     redirect(APP_URL . '/schools.php');

@@ -25,10 +25,10 @@ $currentUserPhoto = trim((string)($currentUser['profile_photo'] ?? ''));
 $currentUserPhotoUrl = $currentUserPhoto !== '' ? (UPLOAD_URL . rawurlencode($currentUserPhoto)) : '';
 
 $currentUserId = (int)($currentUser['id'] ?? 0);
+$db = getDB();
 
 // Ensure district is set from session (set during login from users.district_id)
 if (getSessionDistrict() === null) {
-    $db = getDB();
     $districtStmt = $db->prepare('SELECT district_id FROM users WHERE id = ? LIMIT 1');
     $districtStmt->execute([$currentUserId]);
     $userDistrict = (int)($districtStmt->fetchColumn() ?? 0);

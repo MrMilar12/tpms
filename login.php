@@ -27,6 +27,44 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'timeout') {
 
 $isTwoFactorStep = hasPendingTwoFactorChallenge();
 
+/** Route every successfully authenticated account through the same role flow. */
+function routeAuthenticatedUser(array $user): never {
+    $userRole = strtolower((string)($user['role'] ?? $_SESSION['role'] ?? ''));
+    $userId = (int)($user['id'] ?? $_SESSION['user_id'] ?? 0);
+
+    if ($userRole === '' || $userRole === 'null' || $userRole === 'viewer') {
+        $_SESSION['pending_role_selection'] = true;
+        redirect(APP_URL . '/select-role');
+    }
+
+    if (in_array($userRole, ['psds', 'sdc'], true)) {
+        $assignedDistricts = getUserDistricts(getDB(), $userId);
+        if (!$assignedDistricts) {
+            $_SESSION['available_districts_for_setup'] = true;
+            redirect(APP_URL . '/setup-districts');
+        }
+
+        $_SESSION['available_districts'] = $assignedDistricts;
+        if (count($assignedDistricts) > 1) {
+            $_SESSION['need_district_selection'] = true;
+            redirect(APP_URL . '/select-district');
+        }
+
+        setSessionDistrict((int)$assignedDistricts[0]);
+        $_SESSION['need_district_selection'] = false;
+    }
+
+    if ($userRole === 'unit_head') {
+        redirect(APP_URL . '/onboarding');
+    }
+
+    if (needsOnboarding()) {
+        redirect(APP_URL . '/first-login-setup');
+    }
+
+    redirect(APP_URL . '/dashboard');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $usernameForThrottle = trim((string)($_POST['username'] ?? ''));
 
@@ -55,17 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             clearFailedLoginAttempts((string)($_SESSION['pending_2fa']['username'] ?? $usernameForThrottle));
             
-            // After 2FA verification, check if user has a role
-            $userRole = strtolower($_SESSION['role'] ?? '');
-            if ($userRole === '' || $userRole === 'null' || $userRole === 'viewer') {
-                // User needs to select a role first (including 'viewer' from old installations)
-                redirect(APP_URL . '/select-role');
-            }
-            
-            if (needsOnboarding()) {
-                redirect(APP_URL . '/first-login-setup');
-            }
-            redirect(APP_URL . '/dashboard');
+            routeAuthenticatedUser([]);
         }
 
         $isTwoFactorStep = hasPendingTwoFactorChallenge();
@@ -98,51 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     clearFailedLoginAttempts($username);
                     finalizeLogin($user);
                     
-                    $userRole = strtolower($user['role'] ?? '');
-                    
-                    // Check if user has no role assigned or has default 'viewer' role - redirect to role selection
-                    if ($userRole === '' || $userRole === 'null' || $userRole === 'viewer') {
-                        $_SESSION['pending_role_selection'] = true;
-                        redirect(APP_URL . '/select-role');
-                    }
-                    
-                    // For PSDS/SDC users - require district selection
-                    if (in_array($userRole, ['psds', 'sdc'], true)) {
-                        $db = getDB();
-                        $assignedDistricts = getUserDistricts($db, (int)$user['id']);
-                        
-                        // If user has assigned districts, store them in session for district selection
-                        if (!empty($assignedDistricts)) {
-                            $_SESSION['available_districts'] = $assignedDistricts;
-                            $_SESSION['need_district_selection'] = true;
-                            
-                            // If only one district, auto-select it
-                            if (count($assignedDistricts) === 1) {
-                                setSessionDistrict($assignedDistricts[0]);
-                                $_SESSION['need_district_selection'] = false;
-                            } else {
-                                // Multiple districts - redirect to selection screen
-                                redirect(APP_URL . '/select-district');
-                            }
-                        } else {
-                            // No districts assigned yet - redirect to assignment screen
-                            $_SESSION['available_districts_for_setup'] = true;
-                            redirect(APP_URL . '/setup-districts');
-                        }
-                    }
-                    
-                    // For unit_head users - go to onboarding
-                    if ($userRole === 'unit_head') {
-                        redirect(APP_URL . '/onboarding');
-                    }
-                    
-                    // Check general onboarding requirement
-                    if (needsOnboarding()) {
-                        redirect(APP_URL . '/first-login-setup');
-                    }
-                    
-                    // Default: go to dashboard
-                    redirect(APP_URL . '/dashboard');
+                    routeAuthenticatedUser($user);
                 }
             }
         }
@@ -1319,7 +1303,7 @@ body.login-v2 {
         <aside class="login-hero-pane">
             <span class="hero-right-glow" aria-hidden="true"></span>
             <div class="hero-top">
-                <span class="brand-chip"><i class="fas fa-sparkles"></i> Welcome</span>
+                <span class="brand-chip"><i class="fas fa-wand-magic-sparkles"></i> Welcome</span>
              
                 <h2 class="hero-title">TalaGuro</h2>
                 <p class="hero-subtitle">Smart Teacher Data for Smarter Planning</p>

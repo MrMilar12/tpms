@@ -719,7 +719,7 @@ foreach (array_slice($moduleSummary, 0, 8) as $row) {
         <?php endforeach; ?>
 
         <?php if ($activityHighlights): ?>
-        <p class="logs-narrative-subtitle"><i class="fas fa-sparkles"></i> Recent Activity Highlights</p>
+        <p class="logs-narrative-subtitle"><i class="fas fa-wand-magic-sparkles"></i> Recent Activity Highlights</p>
         <ul class="logs-narrative-list">
             <?php foreach ($activityHighlights as $highlight): ?>
             <li><?= clean($highlight) ?></li>
